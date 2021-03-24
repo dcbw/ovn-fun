@@ -1,0 +1,58 @@
+#!/bin/bash
+
+echo
+echo
+echo "                        .------------."
+echo "sw1-cont2 [10.0.0.2] ---|    sw1     |"
+echo "sw1-cont3 [10.0.0.3] ---|  10.0.0.1  |"
+echo "                        '------------'"
+echo "                               |"
+echo "                         .----------."
+echo "                         |  router  |"
+echo "                         '----------'"
+echo "                               |"
+echo "                        .------------."
+echo "sw2-cont5 [10.5.0.5] ---|    sw2     |"
+echo "sw2-cont6 [10.5.0.6] ---|  10.5.0.1  |"
+echo "                        '------------'"
+echo
+echo "Poke around OVN:"
+echo "    ovn-nbctl show"
+echo "    ovn-sbctl show"
+echo "      Q: What is left out of the diagram above?"
+echo
+echo "Talk to the HTTP servers that sw1-cont2 and sw2-cont5 are running:"
+echo "    ip netns exec sw1-cont3 curl http://10.0.0.2:8000"
+echo "    ip netns exec sw1-cont3 curl http://10.5.0.5:8000"
+echo
+echo "Talk to a Load Balancer VIP that is backed by HTTP servers that sw1-cont2 and sw2-cont5 are running:"
+echo "    ip netns exec sw1-cont3 curl http://11.0.0.5:80"
+echo "      Q: Run this multiple times. How do you know that load-balancing is happening?"
+echo
+echo "Simulate TCP packets from sw1-cont2 -> sw2-cont5, at both OVN and OVS levels:"
+echo "    ovn-trace sw1 'inport==\"sw1-cont2\" && eth.dst==0a:58:0a:f4:00:10 && eth.src==0a:58:0a:f4:00:03 && ip4.dst==10.5.0.5 && ip4.src==10.0.0.2 && tcp.dst==8000 && ip.ttl==64'"
+echo "    ovs-appctl ofproto/trace br-int 'in_port=sw1-cont2,tcp,dl_dst=0a:58:0a:f4:00:10,dl_src=0a:58:0a:f4:00:03,nw_dst=10.5.0.5,nw_src=10.0.0.2,tp_dst=8000,nw_ttl=64'"
+echo "    ovs-appctl ofproto/trace br-int 'in_port=sw1-cont2,tcp,dl_dst=0a:58:0a:f4:00:10,dl_src=0a:58:0a:f4:00:03,nw_dst=10.5.0.5,nw_src=10.0.0.2,tp_dst=8000,nw_ttl=64' | ovn-detrace"
+echo "      Q: How do you know if the simulations worked or not?"
+echo "      Q: Why would you use ovn-trace vs. ofproto/trace?"
+echo
+echo "Simulate TCP packets from sw1-cont2 -> 1.1.1.1, at both OVN and OVS levels:"
+echo "    ovn-trace sw1 'inport==\"sw1-cont2\" && eth.dst==0a:58:0a:f4:00:10 && eth.src==0a:58:0a:f4:00:03 && ip4.dst==1.1.1.1 && ip4.src==10.0.0.2 && tcp.dst==8000 && ip.ttl==64'"
+echo "    ovs-appctl ofproto/trace br-int 'in_port=sw1-cont2,tcp,dl_dst=0a:58:0a:f4:00:10,dl_src=0a:58:0a:f4:00:03,nw_dst=1.1.1.1,nw_src=10.0.0.2,tp_dst=8000,nw_ttl=64'"
+echo "      Q: Why doesn't this work, and how do you know it doesn't?"
+echo "      Q: Where in the logical network diagram does the packet stop?"
+echo
+echo "Simulate TCP packets from sw1-cont3 -> Service VIP, at both OVN and OVS levels:"
+echo "    ovn-trace --ct=new sw1 'inport==\"sw1-cont3\" && eth.dst==0a:58:0a:f4:00:10 && eth.src==0a:58:0a:f4:00:03 && ip4.dst==11.0.0.5 && ip4.src==10.0.0.3 && tcp.dst==80 && ip.ttl==64'"
+echo "    ovs-appctl ofproto/trace br-int 'in_port=sw1-cont3,tcp,dl_dst=0a:58:0a:f4:00:10,dl_src=0a:58:0a:f4:00:03,nw_dst=11.0.0.5,nw_src=10.0.0.3,tp_dst=80,nw_ttl=64'"
+echo "      Q: Where does the load-balancing (eg DNAT) actually happen?"
+echo
+echo "Simulate TCP packets from sw1-cont3 -> another Service VIP:"
+echo "    ovn-trace --ct=new sw1 'inport==\"sw1-cont3\" && eth.dst==0a:58:0a:f4:00:10 && eth.src==0a:58:0a:f4:00:03 && ip4.dst==11.0.0.20 && ip4.src==10.0.0.3 && tcp.dst==80 && ip.ttl==64'"
+echo "      Q: Why doesn't this work?"
+echo
+echo "Run tcpdump on OVS ports:"
+echo "    ovs-tcpdump -i sw2-cont5 &"
+echo "    ip netns exec sw1-cont3 curl http://10.5.0.5:8000"
+echo
+echo
