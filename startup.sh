@@ -23,6 +23,13 @@ add_pod() {
   ovn-nbctl lsp-add ${switch} ${name} -- lsp-set-addresses ${name} "${mac} ${ip}"
 }
 
+# Check openvswitch module is already loaded
+if ! grep -q "^openvswitch " /proc/modules ; then
+    echo "openvswitch module not found."
+    echo "Run \"sudo modprobe openvswitch\" before running the container"
+    exit 1
+fi
+
 # Start OVS
 mkdir -p /var/run/openvswitch
 mkdir -p /var/log/openvswitch
