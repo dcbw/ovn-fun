@@ -39,7 +39,7 @@ mkdir -p /usr/share/ovn
 /usr/share/ovn/scripts/ovn-ctl --no-monitor start_northd
 /usr/share/ovn/scripts/ovn-ctl --no-monitor start_controller
 
-encap_ip=$(ip addr show dev eth0 | grep inet | cut -f6 -d' ' | cut -f1 -d'/')
+encap_ip=$(ip -4 addr show dev eth0 | grep inet | cut -f6 -d' ' | cut -f1 -d'/')
 ovs-vsctl set Open_vSwitch . \
     external_ids:ovn-remote=unix:/var/run/ovn/ovnsb_db.sock \
     external_ids:ovn-encap-type=geneve \
